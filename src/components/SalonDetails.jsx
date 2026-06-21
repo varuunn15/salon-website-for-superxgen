@@ -429,124 +429,128 @@ export default function SalonDetails({
             <div className="booking-card glass-panel-glow">
               <h3 className="booking-header font-display">Schedule Booking</h3>
               
-              {/* Step 1: Select Date */}
-              <div className="booking-step-title">
-                <Calendar size={14} />
-                1. Select Date
-              </div>
-              <div className="calendar-slider">
-                {days.map(day => {
-                  const isActive = selectedDate === day.dateString;
-                  return (
-                    <div 
-                      key={day.dateString}
-                      className={`calendar-day-card ${isActive ? 'active' : ''}`}
-                      onClick={() => setSelectedDate(day.dateString)}
-                    >
-                      <span className="calendar-weekday">{day.dayName}</span>
-                      <span className="calendar-date">{day.dayNum}</span>
-                      <span className="calendar-weekday">{day.month}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Step 2: Select Stylist */}
-              <div className="booking-step-title">
-                <UserCheck size={14} />
-                2. Select Specialist
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-                <select
-                  value={selectedStylist}
-                  onChange={(e) => setSelectedStylist(e.target.value)}
-                  style={{ width: '100%', background: 'var(--bg-darker)', borderColor: 'var(--border-light)' }}
-                >
-                  <option value="">Any Stylist (No preference)</option>
-                  {salon.stylists?.map(stylist => (
-                    <option key={stylist.id} value={stylist.id}>
-                      {stylist.name} ({stylist.specialty} • {stylist.rating} ★)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Step 3: Select Time */}
-              <div className="booking-step-title">
-                <Clock size={14} />
-                3. Select Time
-              </div>
-              <div className="time-slots-grid">
-                {timeSlots.map(slot => {
-                  const isBooked = selectedDate && isSlotBooked(selectedDate, slot, selectedStylist);
-                  const isActive = selectedTimeSlot === slot;
-                  
-                  return (
-                    <button
-                      key={slot}
-                      className={`time-slot-btn ${isActive ? 'active' : ''}`}
-                      style={{
-                        position: 'relative',
-                        borderColor: isBooked ? 'rgba(255, 74, 90, 0.25)' : undefined,
-                        opacity: isBooked ? 0.75 : 1
-                      }}
-                      onClick={() => setSelectedTimeSlot(slot)}
-                    >
-                      {slot}
-                      {isBooked && (
-                        <span style={{ display: 'block', fontSize: '0.55rem', color: 'var(--danger-red)', marginTop: '2px', fontWeight: '700' }}>
-                          WAITLIST
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Slot Availability Warnings */}
-              {selectedDate && selectedTimeSlot && (
-                <div style={{ fontSize: '0.8rem', color: isCurrentSlotBooked ? 'var(--danger-red)' : 'var(--primary-cyan)', marginBottom: '16px', fontWeight: '500' }}>
-                  {isCurrentSlotBooked 
-                    ? `⚠️ Selected slot with ${selectedStylistName} is booked. Clicking submit will add you to the Waitlist.`
-                    : `✓ Slot with ${selectedStylistName} is fully open and available!`
-                  }
+              <div className="booking-card-body">
+                {/* Step 1: Select Date */}
+                <div className="booking-step-title">
+                  <Calendar size={14} />
+                  1. Select Date
                 </div>
-              )}
+                <div className="calendar-slider">
+                  {days.map(day => {
+                    const isActive = selectedDate === day.dateString;
+                    return (
+                      <div 
+                        key={day.dateString}
+                        className={`calendar-day-card ${isActive ? 'active' : ''}`}
+                        onClick={() => setSelectedDate(day.dateString)}
+                      >
+                        <span className="calendar-weekday">{day.dayName}</span>
+                        <span className="calendar-date">{day.dayNum}</span>
+                        <span className="calendar-weekday">{day.month}</span>
+                      </div>
+                    );
+                  })}
+                </div>
 
-              {/* Step 4: Selected Summary */}
-              {salonCartItems.length > 0 && (
-                <div className="booking-summary-list">
-                  <div className="booking-step-title" style={{ marginBottom: '12px' }}>
-                    <ShoppingCart size={14} />
-                    Summary ({salonCartItems.length} services)
-                  </div>
-                  {salonCartItems.map(item => (
-                    <div key={item.id} className="booking-summary-item">
-                      <span>{item.name}</span>
-                      <span>₹{item.price}</span>
-                    </div>
-                  ))}
-                  
-                  <div className="booking-total-row">
-                    <span>Total</span>
-                    <span>₹{salonSubtotal}</span>
-                  </div>
-
-                  <button 
-                    className={isCurrentSlotBooked ? 'btn-danger mt-4' : 'btn-primary mt-4'}
-                    style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
-                    onClick={handleBookingSubmit}
+                {/* Step 2: Select Specialist */}
+                <div className="booking-step-title">
+                  <UserCheck size={14} />
+                  2. Select Specialist
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                  <select
+                    value={selectedStylist}
+                    onChange={(e) => setSelectedStylist(e.target.value)}
+                    style={{ width: '100%', background: 'var(--bg-darker)', borderColor: 'var(--border-light)' }}
                   >
-                    {isCurrentSlotBooked ? 'Request Waitlist Slot' : 'Proceed to Booking'}
-                  </button>
+                    <option value="">Any Stylist (No preference)</option>
+                    {salon.stylists?.map(stylist => (
+                      <option key={stylist.id} value={stylist.id}>
+                        {stylist.name} ({stylist.specialty} • {stylist.rating} ★)
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
 
-              {salonCartItems.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                  Select services from the menu to start booking.
+                {/* Step 3: Select Time */}
+                <div className="booking-step-title">
+                  <Clock size={14} />
+                  3. Select Time
                 </div>
-              )}
+                <div className="time-slots-grid">
+                  {timeSlots.map(slot => {
+                    const isBooked = selectedDate && isSlotBooked(selectedDate, slot, selectedStylist);
+                    const isActive = selectedTimeSlot === slot;
+                    
+                    return (
+                      <button
+                        key={slot}
+                        className={`time-slot-btn ${isActive ? 'active' : ''}`}
+                        style={{
+                          position: 'relative',
+                          borderColor: isBooked ? 'rgba(255, 74, 90, 0.25)' : undefined,
+                          opacity: isBooked ? 0.75 : 1
+                        }}
+                        onClick={() => setSelectedTimeSlot(slot)}
+                      >
+                        {slot}
+                        {isBooked && (
+                          <span style={{ display: 'block', fontSize: '0.55rem', color: 'var(--danger-red)', marginTop: '2px', fontWeight: '700' }}>
+                            WAITLIST
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Slot Availability Warnings */}
+                {selectedDate && selectedTimeSlot && (
+                  <div style={{ fontSize: '0.8rem', color: isCurrentSlotBooked ? 'var(--danger-red)' : 'var(--primary-cyan)', marginBottom: '16px', fontWeight: '500' }}>
+                    {isCurrentSlotBooked 
+                      ? `⚠️ Selected slot with ${selectedStylistName} is booked. Clicking submit will add you to the Waitlist.`
+                      : `✓ Slot with ${selectedStylistName} is fully open and available!`
+                    }
+                  </div>
+                )}
+              </div>
+
+              <div className="booking-card-footer">
+                {/* Step 4: Selected Summary */}
+                {salonCartItems.length > 0 && (
+                  <div className="booking-summary-list">
+                    <div className="booking-step-title" style={{ marginBottom: '12px' }}>
+                      <ShoppingCart size={14} />
+                      Summary ({salonCartItems.length} services)
+                    </div>
+                    {salonCartItems.map(item => (
+                      <div key={item.id} className="booking-summary-item">
+                        <span>{item.name}</span>
+                        <span>₹{item.price}</span>
+                      </div>
+                    ))}
+                    
+                    <div className="booking-total-row">
+                      <span>Total</span>
+                      <span>₹{salonSubtotal}</span>
+                    </div>
+
+                    <button 
+                      className={isCurrentSlotBooked ? 'btn-danger mt-4' : 'btn-primary mt-4'}
+                      style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
+                      onClick={handleBookingSubmit}
+                    >
+                      {isCurrentSlotBooked ? 'Request Waitlist Slot' : 'Proceed to Booking'}
+                    </button>
+                  </div>
+                )}
+
+                {salonCartItems.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    Select services from the menu to start booking.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
