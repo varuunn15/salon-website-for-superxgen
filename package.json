@@ -1,0 +1,36 @@
+{
+  "name": "superxgen",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Royal Glow Studio: Premium luxury beauty salon & wellness marketplace with high-interactivity ThreeJS 3D graphics, cursor tilt hover effects, and Kaggle financial statistics integration.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/varuunn15/salon-website-for-superxgen.git"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "gsap": "^3.15.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.20.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "vite": "^8.0.12"
+  }
+}
