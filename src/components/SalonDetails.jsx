@@ -146,6 +146,14 @@ export default function SalonDetails({
     }
   };
 
+  const handleStickyProceed = () => {
+    if (!selectedDate || !selectedTimeSlot) {
+      document.querySelector('.booking-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      handleBookingSubmit();
+    }
+  };
+
   // BUNDLE RECOMMENDATION: "Complete the Look"
   // Suggest a facial if they only booked hair, suggest hair spa if they booked cut, etc.
   const getBundleRecommendation = () => {
@@ -538,6 +546,23 @@ export default function SalonDetails({
             </div>
           </div>
         </div>
+
+        {/* Sticky Bottom Action Bar for Mobile/Tablet */}
+        {salonCartItems.length > 0 && (
+          <div className="sticky-booking-bar">
+            <div className="sticky-booking-info">
+              <span className="sticky-booking-count">{salonCartItems.length} {salonCartItems.length === 1 ? 'service' : 'services'} selected</span>
+              <span className="sticky-booking-total">₹{salonSubtotal}</span>
+            </div>
+            <button 
+              className={`sticky-booking-btn ${isCurrentSlotBooked ? 'btn-danger' : 'btn-primary'}`}
+              onClick={handleStickyProceed}
+              style={{ border: 'none', cursor: 'pointer' }}
+            >
+              {isCurrentSlotBooked ? 'Request Waitlist' : (selectedDate && selectedTimeSlot ? 'Proceed to Booking' : 'Select Date & Time')}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
