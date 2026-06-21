@@ -182,95 +182,99 @@ export default function SalonDetails({
           <X size={20} />
         </button>
 
-        {(() => {
-          const imageIds = {
-            hair: [
-              '1560066984-138dadb4c035', '1562322140-8baeececf3df', '1593164842264-854604db2260',
-              '1622286342621-4bd786c2447c', '1596178060671-7a80dc8059ea', '1600948836101-f9ffda59d250',
-              '1503951914875-452162b0f3f1', '1580618672591-eb180b1a973f', '1516975080664-ed2fc6a32937',
-              '1522337360788-8b13dee7a37e', '1492106087820-71f1a00d2b11'
-            ],
-            spa: [
-              '1540555700478-4be289fbecef', '1600334089648-b0d9d3028eb2', '1519823551278-64ac92734fb1',
-              '1515377905703-c4788e51af15', '1512290923902-8a9f81dc236c', '1519824145371-296894a0daa9',
-              '1522335789203-aabd1fc54bc9'
-            ],
-            massage: [
-              '1600334089648-b0d9d3028eb2', '1540555700478-4be289fbecef', '1519823551278-64ac92734fb1',
-              '1512290923902-8a9f81dc236c', '1522335789203-aabd1fc54bc9'
-            ],
-            nails: [
-              '1604654894610-df63bc536371', '1607779097040-26e80aa78e66', '1519014816548-bf5fe059798b',
-              '1515377905703-c4788e51af15'
-            ],
-            facial: [
-              '1522337360788-8b13dee7a37e', '1512290923902-8a9f81dc236c', '1596178065887-1198b6148b2b',
-              '1616394584738-fc6e612e71b9', '1556228720-195a672e8a03', '1598440947619-2c35fc9aa908',
-              '1515377905703-c4788e51af15', '1570172619644-dfd03ed5d881'
-            ],
-            grooming: [
-              '1621605815971-fbc98d665033', '1503951914875-452162b0f3f1', '1562322140-8baeececf3df',
-              '1596178060671-7a80dc8059ea', '1600948836101-f9ffda59d250'
-            ],
-            makeup: [
-              '1487412720507-e7ab37603c6f', '1522337360788-8b13dee7a37e', '1596462502278-27bfdc403348',
-              '1512496015851-a90fb38ba796'
-            ],
-            tattoo: [
-              '1503023345310-bd7c1de61c7d', '1562322140-8baeececf3df', '1593164842264-854604db2260',
-              '1622286342621-4bd786c2447c'
-            ],
-            skinClinic: [
-              '1596178065887-1198b6148b2b', '1570172619644-dfd03ed5d881', '1512290923902-8a9f81dc236c'
-            ]
-          };
-
-          const primaryCat = salon.services && salon.services[0] ? salon.services[0].category : 'hair';
-          const categoryList = imageIds[primaryCat] || imageIds.hair;
-          
-          let hash = 0;
-          for (let i = 0; i < salon.id.length; i++) {
-            hash += salon.id.charCodeAt(i) * (i + 1);
-          }
-          const photoId = categoryList[hash % categoryList.length];
-          const imageUrl = `https://images.unsplash.com/photo-${photoId}?auto=format&fit=crop&w=1200&q=80`;
-
-          return (
-            <div 
-              className="details-hero" 
-              style={{ 
-                backgroundImage: `url(${imageUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                position: 'relative'
-              }}
-            >
-              <div 
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(26,29,32,0.85) 100%)',
-                  zIndex: 1
-                }}
-              />
-              <div className="details-hero-text" style={{ position: 'relative', zIndex: 3 }}>
-                <h2 className="details-hero-logo" style={{ color: '#FFFFFF' }}>{salon.name.split(' ')[0]}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--primary-gold)' }}>
-                  <Star size={16} fill="currentColor" />
-                  <span style={{ fontWeight: '600', color: '#FFFFFF' }}>{salon.rating} ({salon.reviewsCount} reviews)</span>
-                  {salon.trending && (
-                    <span className="badge-cyan" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
-                      🔥 Trending #1
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
         <div className="details-content">
           <div className="details-main">
+            {/* 1. Hero Banner inside Left Column */}
+            {(() => {
+              const imageIds = {
+                hair: [
+                  '1560066984-138dadb4c035', '1562322140-8baeececf3df', '1593164842264-854604db2260',
+                  '1622286342621-4bd786c2447c', '1596178060671-7a80dc8059ea', '1600948836101-f9ffda59d250',
+                  '1503951914875-452162b0f3f1', '1580618672591-eb180b1a973f', '1516975080664-ed2fc6a32937',
+                  '1522337360788-8b13dee7a37e', '1492106087820-71f1a00d2b11'
+                ],
+                spa: [
+                  '1540555700478-4be289fbecef', '1600334089648-b0d9d3028eb2', '1519823551278-64ac92734fb1',
+                  '1515377905703-c4788e51af15', '1512290923902-8a9f81dc236c', '1519824145371-296894a0daa9',
+                  '1522335789203-aabd1fc54bc9'
+                ],
+                massage: [
+                  '1600334089648-b0d9d3028eb2', '1540555700478-4be289fbecef', '1519823551278-64ac92734fb1',
+                  '1512290923902-8a9f81dc236c', '1522335789203-aabd1fc54bc9'
+                ],
+                nails: [
+                  '1604654894610-df63bc536371', '1607779097040-26e80aa78e66', '1519014816548-bf5fe059798b',
+                  '1515377905703-c4788e51af15'
+                ],
+                facial: [
+                  '1522337360788-8b13dee7a37e', '1512290923902-8a9f81dc236c', '1596178065887-1198b6148b2b',
+                  '1616394584738-fc6e612e71b9', '1556228720-195a672e8a03', '1598440947619-2c35fc9aa908',
+                  '1515377905703-c4788e51af15', '1570172619644-dfd03ed5d881'
+                ],
+                grooming: [
+                  '1621605815971-fbc98d665033', '1503951914875-452162b0f3f1', '1562322140-8baeececf3df',
+                  '1596178060671-7a80dc8059ea', '1600948836101-f9ffda59d250'
+                ],
+                makeup: [
+                  '1487412720507-e7ab37603c6f', '1522337360788-8b13dee7a37e', '1596462502278-27bfdc403348',
+                  '1512496015851-a90fb38ba796'
+                ],
+                tattoo: [
+                  '1503023345310-bd7c1de61c7d', '1562322140-8baeececf3df', '1593164842264-854604db2260',
+                  '1622286342621-4bd786c2447c'
+                ],
+                skinClinic: [
+                  '1596178065887-1198b6148b2b', '1570172619644-dfd03ed5d881', '1512290923902-8a9f81dc236c'
+                ]
+              };
+
+              const primaryCat = salon.services && salon.services[0] ? salon.services[0].category : 'hair';
+              const categoryList = imageIds[primaryCat] || imageIds.hair;
+              
+              let hash = 0;
+              for (let i = 0; i < salon.id.length; i++) {
+                hash += salon.id.charCodeAt(i) * (i + 1);
+              }
+              const photoId = categoryList[hash % categoryList.length];
+              const imageUrl = `https://images.unsplash.com/photo-${photoId}?auto=format&fit=crop&w=1200&q=80`;
+
+              return (
+                <div 
+                  className="details-hero" 
+                  style={{ 
+                    backgroundImage: `url(${imageUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    position: 'relative',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    marginBottom: '24px'
+                  }}
+                >
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(6,7,10,0.85) 100%)',
+                      zIndex: 1
+                    }}
+                  />
+                  <div className="details-hero-text" style={{ position: 'relative', zIndex: 3 }}>
+                    <h2 className="details-hero-logo" style={{ color: '#FFFFFF' }}>{salon.name.split(' ')[0]}</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--primary-gold)' }}>
+                      <Star size={16} fill="currentColor" />
+                      <span style={{ fontWeight: '600', color: '#FFFFFF' }}>{salon.rating} ({salon.reviewsCount} reviews)</span>
+                      {salon.trending && (
+                        <span className="badge-cyan" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+                          🔥 Trending #1
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div>
               <h1 className="font-display" style={{ fontSize: '2rem', marginBottom: '8px' }}>{salon.name}</h1>
               <div style={{ display: 'flex', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '16px' }}>
