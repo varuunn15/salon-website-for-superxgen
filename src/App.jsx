@@ -484,7 +484,7 @@ export default function App() {
       )}
 
       {/* Floating Gold Aura AI Toggle */}
-      {!isAuraOpen && (
+      {!isAuraOpen && !selectedSalon && !isCartOpen && !checkoutDetails && (
         <button 
           className="btn-primary" 
           style={{
