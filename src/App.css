@@ -2302,3 +2302,18 @@ body {
   }
 }
 
+/* Responsive SVG sizing for GSAP Avatar Section Tools */
+@media (max-width: 768px) {
+  .gsap-avatar-container svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .gsap-avatar-container svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+

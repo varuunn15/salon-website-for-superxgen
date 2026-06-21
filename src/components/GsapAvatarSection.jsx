@@ -121,6 +121,22 @@ export default function GsapAvatarSection() {
   const magneticPos = useRef({ x: 0, y: 0 });
 
   const [activeTooltip, setActiveTooltip] = useState(null);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 768;
+  const isMini = windowWidth < 480;
+
+  const toolSize = isMini ? 38 : (isMobile ? 46 : 54);
+  const avatarSize = isMini ? 130 : (isMobile ? 160 : 190);
+  const containerHeight = isMini ? 300 : (isMobile ? 360 : 420);
 
   useEffect(() => {
     // Check user preference for reduced motion
@@ -161,8 +177,8 @@ export default function GsapAvatarSection() {
       // Increment angle
       orbitSettings.current.angle += 0.005;
 
-      const baseRx = 220; // Horizontal radius
-      const baseRy = 120; // Vertical radius
+      const baseRx = isMini ? 95 : (isMobile ? 145 : 220); // Horizontal radius
+      const baseRy = isMini ? 55 : (isMobile ? 85 : 120); // Vertical radius
       const rx = baseRx * orbitSettings.current.multiplier;
       const ry = baseRy * orbitSettings.current.multiplier;
 
@@ -226,6 +242,7 @@ export default function GsapAvatarSection() {
         // Random style assignments (size, color shades of gold/pink)
         const size = gsap.utils.random(5, 10);
         const color = gsap.utils.random(['#FF6A88', '#FF99AC', '#D5C4A1', '#76AFFF']);
+        const containerWidth = containerRef.current.offsetWidth;
         
         Object.assign(particle.style, {
           position: 'absolute',
@@ -236,8 +253,8 @@ export default function GsapAvatarSection() {
           pointerEvents: 'none',
           boxShadow: `0 0 10px ${color}`,
           zIndex: 1,
-          left: `${gsap.utils.random(20, 280)}px`,
-          top: '320px',
+          left: `${gsap.utils.random(20, containerWidth - 40)}px`,
+          top: `${isMini ? 220 : (isMobile ? 270 : 320)}px`,
           opacity: 0
         });
 
@@ -268,13 +285,15 @@ export default function GsapAvatarSection() {
         const svgStrand = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svgStrand.setAttribute('viewBox', '0 0 100 50');
         svgStrand.setAttribute('class', 'hair-strand');
+        const containerWidth = containerRef.current.offsetWidth;
+        
         Object.assign(svgStrand.style, {
           position: 'absolute',
           width: '70px',
           height: '35px',
           zIndex: 1,
           left: '-80px',
-          top: `${gsap.utils.random(40, 280)}px`,
+          top: `${gsap.utils.random(40, containerHeight - 60)}px`,
           pointerEvents: 'none',
           opacity: 0.35
         });
@@ -291,7 +310,7 @@ export default function GsapAvatarSection() {
 
         // Drift across screen
         gsap.to(svgStrand, {
-          x: 480,
+          x: containerWidth + 100,
           rotation: gsap.utils.random(-45, 45),
           duration: gsap.utils.random(9, 14),
           ease: 'power1.inOut',
@@ -320,7 +339,7 @@ export default function GsapAvatarSection() {
       if (particleInterval) clearInterval(particleInterval);
       if (strandInterval) clearInterval(strandInterval);
     };
-  }, []);
+  }, [windowWidth]);
 
   // Click Avatar -> Burst Outwards & Elastic Snapback Animation
   const handleAvatarClick = () => {
@@ -441,7 +460,7 @@ export default function GsapAvatarSection() {
       onClick={handleSectionClick}
       style={{
         width: '100%',
-        height: '420px',
+        height: `${containerHeight}px`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -475,8 +494,8 @@ export default function GsapAvatarSection() {
         ref={avatarRef}
         onClick={handleAvatarClick}
         style={{
-          width: '190px',
-          height: '190px',
+          width: `${avatarSize}px`,
+          height: `${avatarSize}px`,
           borderRadius: '50%',
           background: 'rgba(255, 255, 255, 0.88)',
           border: '2.5px solid #FF99AC',
@@ -508,7 +527,7 @@ export default function GsapAvatarSection() {
         <span 
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.9rem',
+            fontSize: isMini ? '1.35rem' : (isMobile ? '1.6rem' : '1.9rem'),
             fontWeight: '700',
             letterSpacing: '0.25em',
             color: '#1A1D20',
@@ -521,7 +540,7 @@ export default function GsapAvatarSection() {
         </span>
         <span 
           style={{
-            fontSize: '0.62rem',
+            fontSize: isMini ? '0.48rem' : (isMobile ? '0.55rem' : '0.62rem'),
             letterSpacing: '0.3em',
             color: '#FF6A88',
             textTransform: 'uppercase',
@@ -544,8 +563,8 @@ export default function GsapAvatarSection() {
           onMouseLeave={(e) => handleToolMouseLeave(idx, e)}
           style={{
             position: 'absolute',
-            width: '54px',
-            height: '54px',
+            width: `${toolSize}px`,
+            height: `${toolSize}px`,
             borderRadius: '50%',
             background: 'rgba(255, 255, 255, 0.95)',
             border: '2px solid #FF99AC',
@@ -567,7 +586,7 @@ export default function GsapAvatarSection() {
               className="gsap-tooltip"
               style={{
                 position: 'absolute',
-                bottom: '62px',
+                bottom: `${toolSize + 8}px`,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 background: 'rgba(26, 29, 32, 0.9)',
