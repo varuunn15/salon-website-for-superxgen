@@ -1,6 +1,6 @@
 # Aura Beauty OS – Personal AI Beauty Consultant & Operating System
 
-[![Production Status](https://img.shields.io/badge/Vercel-Deployed-success?logo=vercel&logoColor=white&color=000000)](https://salon-website-for-superxgen-main.vercel.app)
+[![Production Status](https://img.shields.io/badge/GitHub%20Pages-Deployed-success?logo=github&logoColor=white&color=181717)](https://varuunn15.github.io/salon-website-for-superxgen/)
 [![Vite Version](https://img.shields.io/badge/Vite-8.0-blue?logo=vite)](https://vite.dev)
 [![React Version](https://img.shields.io/badge/React-19.0-61dafb?logo=react&logoColor=black)](https://react.dev)
 [![Vanilla CSS](https://img.shields.io/badge/Styling-Custom%20Vanilla%20CSS-ffd700)](https://developer.mozilla.org/en-US/docs/Web/CSS)
@@ -8,7 +8,7 @@
 
 Aura is a premium, next-generation **AI-First Beauty Operating System** designed to transform the traditional beauty salon booking experience into a hyper-personalized styling and wellness journey. Leveraging **Three.js/WebGL** for interactive 3D visualizations, **Leaflet** for smart mapping, and browser-native AI diagnostics, Aura serves as a unified digital ecosystem for clients, stylists, and salon administrators.
 
-- **Production Live URL**: [https://salon-website-for-superxgen-main.vercel.app](https://salon-website-for-superxgen-main.vercel.app)
+- **Production Live URL**: [https://varuunn15.github.io/salon-website-for-superxgen/](https://varuunn15.github.io/salon-website-for-superxgen/)
 - **Architecture Documentation**: [ARCHITECTURE.md](file:///C:/Users/Asus/Downloads/salon-website-for-superxgen-main/ARCHITECTURE.md)
 - **API Documentation**: [API.md](file:///C:/Users/Asus/Downloads/salon-website-for-superxgen-main/API.md)
 
