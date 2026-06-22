@@ -35,7 +35,7 @@ export default function UserDashboard({
     if (!reviewBooking) return;
 
     onAddReview(reviewBooking.salonId, {
-      author: "Preeti Sinha (You)",
+      author: currentUser ? `${currentUser.name} (You)` : 'Anonymous',
       rating: reviewRating,
       date: new Date().toISOString().split('T')[0],
       comment: reviewComment
@@ -215,7 +215,7 @@ export default function UserDashboard({
                       )}
                       {isWaitlisted && (
                         <span className="badge-gold" style={{ fontSize: '0.75rem', color: 'var(--danger-red)', borderColor: 'rgba(255, 74, 90, 0.3)' }}>
-                          Queue position: #2
+                          Queue position: #{bookings.filter(b => b.status === 'Waitlisted').findIndex(b => b.id === bkg.id) + 1}
                         </span>
                       )}
                     </div>
@@ -325,7 +325,9 @@ export default function UserDashboard({
                 <div style={{ zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                   <div>
                     <div style={{ fontSize: '0.55rem', opacity: 0.6, textTransform: 'uppercase' }}>Member ID</div>
-                    <div style={{ fontWeight: '600', fontSize: '0.95rem', letterSpacing: '0.05em' }}>RG-9018-2026</div>
+                    <div style={{ fontWeight: '600', fontSize: '0.95rem', letterSpacing: '0.05em' }}>
+                      RG-{currentUser ? Math.abs(currentUser.email.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0) % 9000 + 1000) : '0000'}-2026
+                    </div>
                     <div style={{ fontSize: '0.8rem', fontWeight: '500', color: 'var(--primary-cyan)', marginTop: '4px' }}>
                       {glowpassTier === 'Glow Elite' ? '✓ 15% VIP Discount Applied' : glowpassTier === 'Glow+' ? '✓ 10% Plus Discount Applied' : '✓ 5% Basic Discount Applied'}
                     </div>
@@ -558,7 +560,7 @@ export default function UserDashboard({
       {/* Write a Review Modal */}
       {reviewBooking && (
         <div className="checkout-modal-overlay">
-          <div className="checkout-modal-card rating-modal-card glass-panel-glow">
+          <div className="checkout-modal-card rating-modal-card glass-panel-glow" style={{ overflowY: 'auto', maxHeight: '90vh' }}>
             <h3 className="font-display text-glow-gold" style={{ fontSize: '1.5rem', color: 'var(--primary-gold)', marginBottom: '8px' }}>
               Rate Your Experience
             </h3>

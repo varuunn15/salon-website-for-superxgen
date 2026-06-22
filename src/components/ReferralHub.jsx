@@ -1,24 +1,38 @@
 import React, { useState } from 'react';
 import { Gift, Copy, Check, Users, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 
-export default function ReferralHub() {
+export default function ReferralHub({ currentUser }) {
   const [copied, setCopied] = useState(false);
-  const referralCode = "AURA-GOLD-9982";
+
+  // Generate a stable referral code derived from the user's email
+  // so each account gets a unique, consistent code.
+  const generateCode = (email) => {
+    if (!email) return 'AURA-GUEST-0000';
+    const hash = Math.abs(email.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0));
+    return `AURA-${email.split('@')[0].toUpperCase().slice(0, 4)}-${(hash % 9000 + 1000)}`;
+  };
+
+  const referralCode = generateCode(currentUser?.email);
   const referralLink = `https://aura.beauty/invite?code=${referralCode}`;
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(referralLink);
+    navigator.clipboard.writeText(referralLink).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = referralLink;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const referralsList = [
-    { name: "Karan Joseph", service: "Precision Haircut", date: "2026-06-18", status: "Completed", reward: "₹500 Credited" },
-    { name: "Rhea Chhabra", service: "Hydrafacial MD", date: "2026-06-15", status: "Completed", reward: "₹500 Credited" },
-    { name: "Marc de Fontaine", service: "French Balayage", date: "2026-06-12", status: "Completed", reward: "₹500 Credited" },
-    { name: "Sneha Sen", service: "Spa Massage", date: "2026-06-20", status: "Pending", reward: "₹500 Pending" },
-    { name: "Amit Verma", service: "Beard Trim", date: "2026-06-19", status: "Pending", reward: "₹500 Pending" }
-  ];
+  // New accounts start with an empty ledger — referrals are earned, not seeded.
+  const referralsList = [];
+  const completedCount = referralsList.filter(r => r.status === 'Completed').length;
+  const pendingCount = referralsList.filter(r => r.status === 'Pending').length;
+  const totalCredits = completedCount * 500;
 
   return (
     <div className="referral-hub-view glass-panel animate-fade-in" style={{ padding: '24px' }}>
@@ -124,17 +138,21 @@ export default function ReferralHub() {
             <div className="glass-panel" style={{ padding: '16px' }}>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Total Referral Balance</span>
               <div style={{ fontSize: '1.6rem', fontWeight: '800', marginTop: '6px', color: 'var(--primary-gold)', display: 'flex', alignItems: 'baseline' }}>
-                ₹1,500
+                {totalCredits > 0 ? `₹${totalCredits.toLocaleString('en-IN')}` : '₹0'}
               </div>
-              <span style={{ fontSize: '0.6rem', color: 'var(--primary-teal)' }}>Ready to redeem at checkout</span>
+              <span style={{ fontSize: '0.6rem', color: 'var(--primary-teal)' }}>
+                {totalCredits > 0 ? 'Ready to redeem at checkout' : 'Invite friends to earn credits'}
+              </span>
             </div>
 
             <div className="glass-panel" style={{ padding: '16px' }}>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Total Successful Invites</span>
               <div style={{ fontSize: '1.6rem', fontWeight: '800', marginTop: '6px', color: '#fff', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                3 <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>Friends</span>
+                {completedCount} <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>Friends</span>
               </div>
-              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>2 invites currently pending</span>
+              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                {pendingCount > 0 ? `${pendingCount} invite${pendingCount > 1 ? 's' : ''} currently pending` : 'No pending invites'}
+              </span>
             </div>
           </div>
 
@@ -146,43 +164,50 @@ export default function ReferralHub() {
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', flexGrow: 1 }}>
-              {referralsList.map((ref, idx) => (
-                <div 
-                  key={idx} 
-                  style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    fontSize: '0.75rem', 
-                    padding: '10px 12px', 
-                    background: 'rgba(255,255,255,0.01)', 
-                    border: '1px solid var(--border-light)', 
-                    borderRadius: '8px',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div>
-                    <strong style={{ color: '#fff' }}>{ref.name}</strong>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.65rem' }}>Service: {ref.service} • {ref.date}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span 
-                      style={{ 
-                        fontSize: '0.65rem', 
-                        color: ref.status === 'Completed' ? '#00e676' : '#ffaa00',
-                        fontWeight: 'bold',
-                        display: 'block',
-                        textTransform: 'uppercase',
-                        marginBottom: '2px'
-                      }}
-                    >
-                      {ref.status}
-                    </span>
-                    <strong style={{ color: ref.status === 'Completed' ? 'var(--primary-gold)' : 'var(--text-muted)' }}>
-                      {ref.reward}
-                    </strong>
-                  </div>
+              {referralsList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 20px', color: 'var(--text-muted)' }}>
+                  <Users size={32} style={{ strokeWidth: 1, marginBottom: '10px' }} />
+                  <p style={{ fontSize: '0.85rem' }}>No referrals yet. Share your link to start earning!</p>
                 </div>
-              ))}
+              ) : (
+                referralsList.map((ref, idx) => (
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      fontSize: '0.75rem', 
+                      padding: '10px 12px', 
+                      background: 'rgba(255,255,255,0.01)', 
+                      border: '1px solid var(--border-light)', 
+                      borderRadius: '8px',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div>
+                      <strong style={{ color: '#fff' }}>{ref.name}</strong>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.65rem' }}>Service: {ref.service} • {ref.date}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span 
+                        style={{ 
+                          fontSize: '0.65rem', 
+                          color: ref.status === 'Completed' ? '#00e676' : '#ffaa00',
+                          fontWeight: 'bold',
+                          display: 'block',
+                          textTransform: 'uppercase',
+                          marginBottom: '2px'
+                        }}
+                      >
+                        {ref.status}
+                      </span>
+                      <strong style={{ color: ref.status === 'Completed' ? 'var(--primary-gold)' : 'var(--text-muted)' }}>
+                        {ref.reward}
+                      </strong>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

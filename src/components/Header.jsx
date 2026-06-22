@@ -6,7 +6,8 @@ export default function Header({
   currentCity, 
   setCurrentCity, 
   activeTab, 
-  setActiveTab, 
+  setActiveTab,
+  onSetTab,
   cartCount, 
   toggleCart,
   favoritesCount,
@@ -52,46 +53,46 @@ export default function Header({
         <nav className="header-nav">
           <span 
             className={`nav-link ${activeTab === 'browse' ? 'active' : ''}`}
-            onClick={() => setActiveTab('browse')}
+            onClick={() => onSetTab('browse')}
           >
             <Scissors size={16} />
             Explore
           </span>
           <span 
             className={`nav-link ${activeTab === 'map' ? 'active' : ''}`}
-            onClick={() => setActiveTab('map')}
+            onClick={() => onSetTab('map')}
           >
             <Map size={16} />
             Smart Map
           </span>
 
-          {/* Customer Specific Navigation Tabs */}
+          {/* Customer-only Navigation Tabs — hidden from guests */}
           {currentUser && currentUser.role === 'user' && (
             <>
               <span 
                 className={`nav-link ${activeTab === 'scan' ? 'active' : ''}`}
-                onClick={() => setActiveTab('scan')}
+                onClick={() => onSetTab('scan')}
               >
                 <Camera size={16} />
                 Face Scan
               </span>
               <span 
                 className={`nav-link ${activeTab === 'budget' ? 'active' : ''}`}
-                onClick={() => setActiveTab('budget')}
+                onClick={() => onSetTab('budget')}
               >
                 <CircleDollarSign size={16} />
                 Budget Plan
               </span>
               <span 
                 className={`nav-link ${activeTab === 'referrals' ? 'active' : ''}`}
-                onClick={() => setActiveTab('referrals')}
+                onClick={() => onSetTab('referrals')}
               >
                 <Sparkles size={16} style={{ color: 'var(--primary-gold)' }} />
                 Refer &amp; Earn
               </span>
               <span 
                 className={`nav-link ${activeTab === 'bookings' ? 'active' : ''}`}
-                onClick={() => setActiveTab('bookings')}
+                onClick={() => onSetTab('bookings')}
               >
                 <Calendar size={16} />
                 My Dashboard
@@ -104,19 +105,19 @@ export default function Header({
             </>
           )}
 
-          {/* Admin / Partner Specific Navigation Tabs */}
+          {/* Admin-only Navigation Tabs — only shown to authenticated admins */}
           {currentUser && currentUser.role === 'admin' && (
             <>
               <span 
                 className={`nav-link ${activeTab === 'admin' ? 'active' : ''}`}
-                onClick={() => setActiveTab('admin')}
+                onClick={() => onSetTab('admin')}
               >
                 <LineChart size={16} />
                 Admin Panel
               </span>
               <span 
                 className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => onSetTab('dashboard')}
               >
                 <User size={16} />
                 Partner

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Star, Calendar, Clock, MapPin, Check, Plus, ShoppingCart, UserCheck, HelpCircle, Sparkles } from 'lucide-react';
 import { SERVICES_CATEGORIES } from '../data/mockData';
 
@@ -38,10 +38,16 @@ export default function SalonDetails({
 
   const days = getNext7Days();
 
-  // Set default date to today
-  if (!selectedDate && days.length > 0) {
-    setSelectedDate(days[0].dateString);
-  }
+  // Set default date to today on first open — using effect to avoid render-phase setState
+  useEffect(() => {
+    if (days.length > 0) {
+      setSelectedDate(days[0].dateString);
+    }
+    // Reset time/stylist selection when salon changes
+    setSelectedTimeSlot('');
+    setSelectedStylist('');
+    setSelectedCategory('all');
+  }, [salon.id]); // Re-run only when the salon changes
 
   const timeSlots = [
     "09:30 AM", "10:30 AM", "11:30 AM", 

@@ -1,29 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Shield, User, Lock, Mail, Sparkles, CheckSquare, Square } from 'lucide-react';
-
-// Seeding standard accounts in localStorage for quick test access
-const SEED_USERS = [
-  {
-    name: "Rohan Deshmukh",
-    email: "user@aura.io",
-    password: "user123",
-    role: "user",
-    preferences: ["hair", "facial"],
-    diagnostics: {
-      faceShape: "Oval",
-      acne: "None (Clean)",
-      hairline: "Normal Taper"
-    }
-  },
-  {
-    name: "System Administrator",
-    email: "admin@aura.io",
-    password: "admin123",
-    role: "admin",
-    preferences: ["hair", "facial", "spa", "makeup"],
-    diagnostics: null
-  }
-];
+import { api } from '../services/api';
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -32,6 +9,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedPrefs, setSelectedPrefs] = useState([]); // ['hair', 'facial', 'spa']
+  const [isLoading, setIsLoading] = useState(false);
 
   // Core preferences checkboxes pool
   const PREFERENCE_OPTIONS = [
@@ -42,12 +20,14 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     { id: 'makeup', label: 'Bridal & Party Makeup' }
   ];
 
-  // Initialize DB if empty
   useEffect(() => {
-    if (!localStorage.getItem('AURA_USERS_DB')) {
-      localStorage.setItem('AURA_USERS_DB', JSON.stringify(SEED_USERS));
-    }
-  }, []);
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -59,52 +39,41 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    const usersDb = JSON.parse(localStorage.getItem('AURA_USERS_DB') || '[]');
-
-    if (isSignUp) {
-      // 1. SIGNUP LOGIC
-      if (usersDb.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-        alert("This email is already registered. Please sign in instead.");
-        return;
+    try {
+      let user;
+      if (isSignUp) {
+        // Signup — delegates to PostgreSQL via api.js (never touches localStorage for user data)
+        user = await api.signup(name, email, password, role, selectedPrefs);
+        alert(`Account created successfully for ${user.name}! Welcome to Aura.`);
+      } else {
+        // Login — delegates to PostgreSQL via api.js
+        user = await api.login(email, password, role);
       }
 
-      const newUser = {
-        name,
-        email: email.toLowerCase(),
-        password,
-        role,
-        preferences: selectedPrefs,
-        diagnostics: null // Filled by face scanner later
-      };
-
-      usersDb.push(newUser);
-      localStorage.setItem('AURA_USERS_DB', JSON.stringify(usersDb));
-      localStorage.setItem('AURA_CURRENT_USER', JSON.stringify(newUser));
-      onLoginSuccess(newUser);
-      alert(`Account created successfully for ${name}! Welcome to Aura.`);
+      onLoginSuccess(user);
       onClose();
-    } else {
-      // 2. LOGIN LOGIC
-      const matchedUser = usersDb.find(
-        u => u.email.toLowerCase() === email.toLowerCase() && u.password === password && u.role === role
-      );
-
-      if (!matchedUser) {
-        alert(`Invalid credentials or incorrect role for ${email}. Please check and try again.`);
-        return;
-      }
-
-      localStorage.setItem('AURA_CURRENT_USER', JSON.stringify(matchedUser));
-      onLoginSuccess(matchedUser);
-      onClose();
+    } catch (err) {
+      alert(err.message || 'Authentication failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="aura-overlay-container animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div 
+      className="aura-overlay-container animate-fade-in" 
+      style={{ 
+        display: 'flex', 
+        alignItems: 'flex-start', 
+        justifyContent: 'center',
+        overflowY: 'auto',
+        padding: '60px 20px'
+      }}
+    >
       {/* Auth Card Box */}
       <div 
         className="luxury-float-card animate-slide-in"
@@ -114,7 +83,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
           background: 'rgba(6, 7, 10, 0.95)',
           border: '1px solid var(--border-glow)',
           borderRadius: '24px',
-          position: 'relative'
+          position: 'relative',
+          marginBottom: '40px'
         }}
       >
         {/* Close Button */}
@@ -289,9 +259,10 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
             type="submit" 
             className="btn-primary" 
             style={{ width: '100%', justifyContent: 'center', marginTop: '10px', padding: '10px' }}
+            disabled={isLoading}
           >
             <Sparkles size={14} />
-            {isSignUp ? 'Register Monolith Account' : 'Authenticate Session'}
+            {isLoading ? 'Processing...' : (isSignUp ? 'Register Monolith Account' : 'Authenticate Session')}
           </button>
         </form>
 

@@ -63,7 +63,10 @@ Traditional salon booking platforms function as static directories. Patrons are 
 | **Styling** | Custom CSS (Variables, HSL Palettes) | Dark luxury styling, glassmorphic filters, and layouts |
 | **Graphics** | Three.js (WebGL Renderer) | Cyber-Face 3D holographic wireframe renderer |
 | **Mapping** | Leaflet JS, OpenStreetMap API | Live mapping, distance scales, and waitlist routing |
-| **State & Auth** | LocalStorage, Custom React Context/Props | Persisting user diagnostics profiles, preferences, and ledger |
+| **Backend** | Node.js + Express | REST API server, authentication, business logic |
+| **Database** | PostgreSQL | Persistent storage for users, bookings, diagnostics, salons |
+| **Auth** | JWT (JSON Web Tokens) | Stateless session authentication |
+| **Client Cache** | localStorage (JWT + UI prefs only) | Non-sensitive UX state, performance cache |
 | **Icons** | Lucide React | Clean, scalable vector symbols |
 | **Build Engine** | Vite 8.0, Rollup | High-speed hot module replacement and bundle compression |
 

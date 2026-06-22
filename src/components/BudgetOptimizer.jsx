@@ -14,6 +14,7 @@ export default function BudgetOptimizer({
 
   // Trigger optimization when budget, city, or category filter changes
   useEffect(() => {
+    setAddedPackages({});
     runOptimization();
   }, [budget, currentCity, selectedType, salons]);
 

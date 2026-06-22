@@ -23,77 +23,100 @@ graph TD
     
     C -->|API Commands| A
     G -->|Save Diagnostics| A
-    A -->|Persist State| K[(localStorage Cache)]
+    A -->|REST API calls| K[Node.js + Express Backend]
+    K -->|SQL Queries| L[(PostgreSQL Database)]
+    A -->|UX Cache Only| M[(localStorage - JWT + Prefs)]
 ```
 
 ---
 
-## 💾 Data Persistence Schema (Local Storage Mock DB)
+## 💾 Data Persistence Schema (PostgreSQL)
 
-Aura uses two client-side database keys to store profile details, diagnostics metrics, and styling choices persistent across browser reloads:
+Aura uses a **hybrid storage model**: PostgreSQL (via the Node.js + Express backend) is the single source of truth for all persistent and business-critical data. The browser's localStorage stores only non-sensitive UX state.
 
-### 1. Active Session Cache (`AURA_CURRENT_USER`)
-Stores the actively logged-in user credentials and active diagnostics:
+### PostgreSQL Tables
 
-```json
-{
-  "name": "Rohan Deshmukh",
-  "email": "user@aura.io",
-  "role": "user",
-  "preferences": ["hair", "facial"],
-  "diagnostics": {
-    "metrics": {
-      "faceShape": "Oval",
-      "hairline": "Receding Taper (Normal)",
-      "beardDensity": "Medium / Trimmed stubble",
-      "mustacheGrowth": "Thick Chevron style",
-      "hairTexture": "Wavy & Textured",
-      "hairDensity": "High density",
-      "forehead": "Balanced proportions",
-      "jawline": "Strong angle",
-      "skinTone": "Wheatish / Olive",
-      "acne": "None (Clean)",
-      "pigmentation": "Minimal (Sun spots only)",
-      "darkCircles": "Slight (Fatigue based)"
-    },
-    "recommendations": {
-      "bestHairstyle": "Textured Crop / Side Swept Pompadour",
-      "avoidHairstyle": "Middle parted shags",
-      "bestBeard": "Short Boxed Beard / Stubble",
-      "bestMustache": "Chevron Trimmed",
-      "hairColor": "Warm Gold highlights",
-      "fade": "Mid-skin drop fade",
-      "skincare": "Salicylic acid cleanser + Vitamin C serum",
-      "facialText": "Brightening Medifacial at Bodycraft Salon",
-      "haircutText": "Precision Haircut at Bodycraft Salon"
-    }
-  }
-}
+#### `users`
+```sql
+CREATE TABLE users (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT NOT NULL,
+  email       TEXT UNIQUE NOT NULL,
+  password    TEXT NOT NULL,           -- bcrypt hashed
+  role        TEXT NOT NULL DEFAULT 'user',  -- 'user' | 'admin'
+  preferences TEXT[],                  -- e.g. ARRAY['hair','facial']
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
-### 2. User Accounts Ledger (`AURA_USERS_DB`)
-An array containing all registered profiles. On application startup, it seeds standard administrator and customer accounts if empty.
-
-```json
-[
-  {
-    "name": "System Administrator",
-    "email": "admin@aura.io",
-    "password": "admin123",
-    "role": "admin",
-    "preferences": ["hair", "facial", "spa", "makeup"],
-    "diagnostics": null
-  },
-  {
-    "name": "Rohan Deshmukh",
-    "email": "user@aura.io",
-    "password": "user123",
-    "role": "user",
-    "preferences": ["hair", "facial"],
-    "diagnostics": { ... }
-  }
-]
+#### `diagnostics`
+```sql
+CREATE TABLE diagnostics (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
+  metrics     JSONB NOT NULL,           -- face shape, skin tone, etc.
+  recommendations JSONB NOT NULL,      -- hairstyle, skincare routine, etc.
+  scanned_at  TIMESTAMPTZ DEFAULT NOW()
+);
 ```
+
+#### `salons`
+```sql
+CREATE TABLE salons (
+  id              TEXT PRIMARY KEY,    -- 'biz-1', 'biz-2', etc.
+  name            TEXT NOT NULL,
+  city            TEXT NOT NULL,
+  address         TEXT,
+  rating          NUMERIC(3,1),
+  price_category  TEXT,
+  image_theme     TEXT,
+  trending        BOOLEAN DEFAULT FALSE,
+  services        JSONB,               -- Array<Service>
+  reviews         JSONB                -- Array<Review>
+);
+```
+
+#### `bookings`
+```sql
+CREATE TABLE bookings (
+  id            TEXT PRIMARY KEY,      -- 'BKG-XXXXX'
+  user_id       UUID REFERENCES users(id),
+  salon_id      TEXT REFERENCES salons(id),
+  salon_name    TEXT,
+  city          TEXT,
+  stylist_name  TEXT,
+  services      JSONB,                 -- [{name, price}]
+  total_price   INTEGER,
+  booking_date  DATE,
+  booking_time  TEXT,
+  status        TEXT DEFAULT 'Confirmed', -- Confirmed | Completed | Cancelled | Waitlisted
+  can_review    BOOLEAN DEFAULT FALSE,
+  reviewed      BOOLEAN DEFAULT FALSE,
+  coupon_won    TEXT,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### `waitlist`
+```sql
+CREATE TABLE waitlist (
+  id          TEXT PRIMARY KEY,
+  user_id     UUID REFERENCES users(id),
+  salon_id    TEXT REFERENCES salons(id),
+  requested_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### localStorage Keys (Client-Side UX Cache Only)
+
+| Key | Purpose | Sensitive? |
+|---|---|---|
+| `AURA_JWT_TOKEN` | Auth session token | Low |
+| `AURA_CACHED_SALONS` | Performance cache for salon listings | No |
+| `AURA_UI_PREFS` | Theme, city, filters, last tab | No |
+| `AURA_SEARCH_HIST` | Recent search queries | No |
+
+> ⚠️ **Never stored in localStorage**: passwords, user profiles, booking records, diagnostic reports, or payment data.
 
 ---
 

@@ -16,8 +16,8 @@ import AdminAnalytics from './components/AdminAnalytics';
 import ReferralHub from './components/ReferralHub';
 import DemoPanel from './components/DemoPanel';
 import AuthModal from './components/AuthModal';
-import { generateDatabase } from './data/dataGenerator';
-import { INITIAL_BOOKINGS, SOCIAL_BOOKINGS } from './data/mockData';
+import { SOCIAL_BOOKINGS } from './data/mockData';
+import { api } from './services/api';
 import './App.css';
 
 export default function App() {
@@ -26,28 +26,97 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('browse'); // 'browse' | 'bookings' | 'dashboard'
+  const [redirectTab, setRedirectTab] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   
   // User Authentication State
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('AURA_CURRENT_USER');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // NOTE: We do NOT persist the full user profile to localStorage.
+  // AURA_JWT_TOKEN (localStorage) is used only as a session credential to
+  // re-authenticate on page load via the backend. The user object lives
+  // exclusively in React state so clearing localStorage never corrupts user data.
+  const [currentUser, setCurrentUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   
   // Dynamic Datasets in State for Real-time Interaction
-  const [dbSize, setDbSize] = useState(2200); // 2000 Target Size default
-  const [salons, setSalons] = useState(() => generateDatabase(2200));
-  const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
-  const [favorites, setFavorites] = useState(['biz-1', 'biz-4']); // Seeding default favorites
+  const [dbSize, setDbSize] = useState(2200);
+  const [salons, setSalons] = useState([]);
+  // Bookings start empty — populated from the backend for the authenticated user.
+  // INITIAL_BOOKINGS is only used for the Partner/Admin demo dashboard view.
+  const [bookings, setBookings] = useState([]);
+  // Favorites start empty — each account has its own independent favorites list.
+  const [favorites, setFavorites] = useState([]);
   const [isAuraOpen, setIsAuraOpen] = useState(false);
-  
-  // Glowpass Membership Tier State ('Glow' | 'Glow+' | 'Glow Elite')
-  const [glowpassTier, setGlowpassTier] = useState('Glow+');
+  const [loading, setLoading] = useState(false);
 
-  // Sync DB size changes dynamically
+  // Glowpass Membership Tier — new accounts default to the entry-level 'Glow' tier.
+  const [glowpassTier, setGlowpassTier] = useState('Glow');
+
+  // Sync DB size and filters changes dynamically from API
   useEffect(() => {
-    setSalons(generateDatabase(dbSize));
+    setCurrentPage(1);
+    const fetchSalons = async () => {
+      setLoading(true);
+      try {
+        // Fetch ALL salons so global dashboards (Admin, Partner, Favorites) have full context
+        const data = await api.getSalons('', 'all', '', dbSize);
+        setSalons(data || []);
+      } catch (err) {
+        console.error("Failed fetching salons from API", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSalons();
   }, [dbSize]);
+
+  // Reset pagination when local filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [currentCity, activeCategory, searchTerm]);
+
+  // Session Restoration / Auto-login on mount
+  useEffect(() => {
+    const restoreSession = async () => {
+      const token = localStorage.getItem('AURA_JWT_TOKEN');
+      if (!token) return;
+      try {
+        const user = await api.getCurrentUser();
+        if (user) {
+          setCurrentUser(user);
+          if (user.glowpassTier) {
+            setGlowpassTier(user.glowpassTier);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to restore session:", err);
+      }
+    };
+    restoreSession();
+  }, []);
+
+  // Load user-specific data (Bookings, Favorites) when currentUser changes
+  useEffect(() => {
+    if (!currentUser) {
+      setBookings([]);
+      setFavorites([]);
+      return;
+    }
+    
+    const fetchUserData = async () => {
+      try {
+        const [userBookings, userFavs] = await Promise.all([
+          api.getBookings(currentUser.email),
+          api.getFavorites(currentUser.email)
+        ]);
+        setBookings(userBookings || []);
+        setFavorites(userFavs || []);
+      } catch (err) {
+        console.error("Failed fetching user-specific data:", err);
+      }
+    };
+    fetchUserData();
+  }, [currentUser]);
+
 
   // Drawer & Modal States
   const [selectedSalon, setSelectedSalon] = useState(null);
@@ -75,14 +144,57 @@ export default function App() {
     return matchesCategory;
   });
 
-  // 2. Favorites Toggle
-  const toggleFavorite = (salonId) => {
-    setFavorites(prev => 
-      prev.includes(salonId) 
-        ? prev.filter(id => id !== salonId) 
-        : [...prev, salonId]
-    );
+  // Pagination Logic
+  const itemsPerPage = 12;
+  const totalPages = Math.ceil(filteredSalons.length / itemsPerPage);
+  const paginatedSalons = filteredSalons.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Intercept tab changes for guest protection
+  const handleSetTab = (tabName) => {
+    if (!currentUser) {
+      const restrictedTabs = ['bookings', 'scan', 'budget', 'referrals', 'dashboard', 'admin'];
+      if (restrictedTabs.includes(tabName)) {
+        setRedirectTab(tabName);
+        setIsAuthOpen(true);
+        return;
+      }
+    } else {
+      // Role-based access control
+      if (tabName === 'admin' && currentUser.role !== 'admin') {
+        alert('Access Denied: Administrator privileges required.');
+        setActiveTab('browse');
+        return;
+      }
+      // Partner dashboard is restricted to admin role in this build
+      if (tabName === 'dashboard' && currentUser.role !== 'admin') {
+        alert('Access Denied: Partner / Business account required.');
+        setActiveTab('browse');
+        return;
+      }
+    }
+    setActiveTab(tabName);
   };
+
+  // 2. Favorites Toggle
+  const toggleFavorite = async (salonId) => {
+    if (!currentUser) {
+      setIsAuthOpen(true);
+      return;
+    }
+    try {
+      const updatedFavorites = await api.toggleFavorite(currentUser.email, salonId);
+      setFavorites(updatedFavorites);
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+      // Fallback
+      setFavorites(prev => 
+        prev.includes(salonId) 
+          ? prev.filter(id => id !== salonId) 
+          : [...prev, salonId]
+      );
+    }
+  };
+
 
   // 3. Cart Operations
   const addToCart = (service) => {
@@ -98,38 +210,65 @@ export default function App() {
   };
 
   // Auth Success Handler
+  // Resets ALL user-specific state before activating the new session so that
+  // a second user logging in never sees data that belonged to the previous user.
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
-    if (user.role === 'admin') {
+
+    // --- Reset all user-scoped state to a clean slate ---
+    setBookings([]);           // No bookings until fetched for this user
+    setFavorites([]);          // No favorites until fetched for this user
+    setGlowpassTier('Glow');   // Default entry-level tier for every new session
+    setCart([]);               // Clear any leftover cart items
+    setCheckoutDetails(null);  // Discard any in-progress checkout
+    setSelectedSalon(null);    // Close any open salon detail panel
+    setIsAuraOpen(false);      // Close AI assistant if open
+    setSearchTerm('');         // Reset search
+    setActiveCategory('all');  // Reset category filter
+    setCurrentPage(1);
+
+    // Navigate to the appropriate view for this role
+    if (redirectTab) {
+      setActiveTab(redirectTab);
+      setRedirectTab(null);
+    } else if (user.role === 'admin') {
       setActiveTab('admin');
     } else {
-      setActiveTab('bookings'); // Customer dashboard
+      setActiveTab('bookings');
     }
   };
 
-  // Sign Out Handler
+  // Sign Out Handler — fully clears all user-specific state so the next user
+  // (or a fresh login of the same account) always starts from a clean slate.
   const handleSignOut = () => {
-    localStorage.removeItem('AURA_CURRENT_USER');
+    localStorage.removeItem('AURA_JWT_TOKEN');
     setCurrentUser(null);
+
+    // Reset all user-scoped state
+    setBookings([]);
+    setFavorites([]);
+    setGlowpassTier('Glow');
+    setCart([]);
+    setCheckoutDetails(null);
+    setSelectedSalon(null);
+    setIsAuraOpen(false);
+    setSearchTerm('');
+    setActiveCategory('all');
+    setCurrentPage(1);
     setActiveTab('browse');
   };
 
   // Save Face Scan Diagnostics
-  const handleSaveDiagnostics = (reportData) => {
+  const handleSaveDiagnostics = async (reportData) => {
     if (!currentUser) return;
-    const updatedUser = {
-      ...currentUser,
-      diagnostics: reportData
-    };
-    setCurrentUser(updatedUser);
-    localStorage.setItem('AURA_CURRENT_USER', JSON.stringify(updatedUser));
-
-    // Sync back to users database
-    const usersDb = JSON.parse(localStorage.getItem('AURA_USERS_DB') || '[]');
-    const updatedDb = usersDb.map(u => 
-      u.email.toLowerCase() === updatedUser.email.toLowerCase() ? updatedUser : u
-    );
-    localStorage.setItem('AURA_USERS_DB', JSON.stringify(updatedDb));
+    try {
+      const updatedReport = await api.saveDiagnostics(currentUser.email, reportData);
+      // Update React state only — diagnostic data is sensitive and must not
+      // be written to localStorage.
+      setCurrentUser(prev => ({ ...prev, diagnostics: updatedReport }));
+    } catch (err) {
+      console.error("Failed to save diagnostics:", err);
+    }
   };
 
   // 4. Booking Checkout Initiation
@@ -151,16 +290,21 @@ export default function App() {
   };
 
   // 5. Booking Success handler
-  const handleConfirmBooking = (newBooking) => {
-    setBookings(prev => [...prev, newBooking]);
-    // Clear items booked for this salon from global cart
-    setCart(prev => prev.filter(item => item.salonId !== newBooking.salonId));
-    setCheckoutDetails(null);
-    setActiveTab('bookings'); // Redirect to customer dashboard
+  const handleConfirmBooking = async (newBooking) => {
+    try {
+      const savedBooking = await api.createBooking(newBooking);
+      setBookings(prev => [...prev, savedBooking]);
+      // Clear items booked for this salon from global cart
+      setCart(prev => prev.filter(item => item.salonId !== newBooking.salonId));
+      setCheckoutDetails(null);
+      setActiveTab('bookings'); // Redirect to customer dashboard
+    } catch (err) {
+      console.error("Booking failed:", err);
+    }
   };
 
   // 6. Waitlist Request Handler
-  const handleJoinWaitlist = (details) => {
+  const handleJoinWaitlist = async (details) => {
     if (!currentUser) {
       alert("Aura Session Expired or Unauthenticated. Please Sign In / Sign Up to join the waitlist.");
       setIsAuthOpen(true);
@@ -184,37 +328,49 @@ export default function App() {
       canReview: false
     };
 
-    setBookings(prev => [...prev, waitlistBooking]);
-    setCart(prev => prev.filter(item => item.salonId !== salon.id));
-    setActiveTab('bookings');
+    try {
+      const savedWaitlist = await api.joinWaitlist(waitlistBooking);
+      setBookings(prev => [...prev, savedWaitlist]);
+      setCart(prev => prev.filter(item => item.salonId !== salon.id));
+      setActiveTab('bookings');
+    } catch (err) {
+      console.error("Waitlist request failed:", err);
+    }
   };
 
   // 7. Partner state updates: Edit Booking Status (accept, complete, cancel)
-  const handleUpdateBookingStatus = (bookingId, newStatus) => {
-    setBookings(prev => 
-      prev.map(bkg => 
-        bkg.id === bookingId 
-          ? { ...bkg, status: newStatus, canReview: newStatus === 'Completed' } 
-          : bkg
-      )
-    );
+  const handleUpdateBookingStatus = async (bookingId, newStatus) => {
+    try {
+      await api.updateBookingStatus(bookingId, newStatus);
+      setBookings(prev => 
+        prev.map(bkg => 
+          bkg.id === bookingId 
+            ? { ...bkg, status: newStatus, canReview: newStatus === 'Completed' } 
+            : bkg
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update booking status", err);
+    }
   };
 
   // 8. Partner state updates: Add Service dynamically to salon catalog
   const handleAddServiceToSalon = (salonId, newService) => {
-    setSalons(prev => 
-      prev.map(s => 
+    setSalons(prev => {
+      const updated = prev.map(s => 
         s.id === salonId 
           ? { ...s, services: [...s.services, newService] } 
           : s
-      )
-    );
+      );
+      api.saveSalonsState(updated);
+      return updated;
+    });
   };
 
   // 9. User state updates: Submit Review & Recalculate Ratings dynamically
   const handleAddReview = (salonId, newReview, bookingId) => {
-    setSalons(prev => 
-      prev.map(s => {
+    setSalons(prev => {
+      const updated = prev.map(s => {
         if (s.id !== salonId) return s;
         const updatedReviews = [...s.reviews, newReview];
         // Calculate new rating average
@@ -227,8 +383,10 @@ export default function App() {
           rating: newAverageRating,
           reviewsCount: updatedReviews.length
         };
-      })
-    );
+      });
+      api.saveSalonsState(updated);
+      return updated;
+    });
 
     // Mark the booking as reviewed
     setBookings(prev => 
@@ -252,6 +410,7 @@ export default function App() {
         setCurrentCity={setCurrentCity}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onSetTab={handleSetTab}
         cartCount={cart.length}
         toggleCart={toggleCart}
         favoritesCount={favorites.length}
@@ -330,23 +489,70 @@ export default function App() {
                 )}
               </div>
 
-              {filteredSalons.length === 0 ? (
+              {loading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '16px' }}>
+                  <style>{`
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  `}</style>
+                  <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    border: '3px solid rgba(213, 196, 161, 0.15)', 
+                    borderTopColor: 'var(--primary-gold)', 
+                    borderRadius: '50%', 
+                    animation: 'spin 1s linear infinite' 
+                  }}></div>
+                  <span style={{ color: 'var(--primary-gold)', fontSize: '0.8rem', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                    Accessing Aura Registry...
+                  </span>
+                </div>
+              ) : filteredSalons.length === 0 ? (
                 <div className="glass-panel text-center" style={{ padding: '60px 20px', color: 'var(--text-muted)' }}>
                   <p style={{ fontSize: '1.1rem', marginBottom: '8px' }}>No salons match your search criteria.</p>
                   <p style={{ fontSize: '0.85rem' }}>Try clearing filters, searching for alternative services, or changing your city.</p>
                 </div>
               ) : (
-                <div className="salons-grid animate-fade-in">
-                  {filteredSalons.map(salon => (
-                    <SalonCard 
-                      key={salon.id}
-                      salon={salon}
-                      isFavorite={favorites.includes(salon.id)}
-                      toggleFavorite={toggleFavorite}
-                      onClick={() => setSelectedSalon(salon)}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="salons-grid animate-fade-in">
+                    {paginatedSalons.map(salon => (
+                      <SalonCard 
+                        key={salon.id}
+                        salon={salon}
+                        isFavorite={favorites.includes(salon.id)}
+                        toggleFavorite={toggleFavorite}
+                        onClick={() => setSelectedSalon(salon)}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '32px' }}>
+                      <button 
+                        className="btn-secondary" 
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        style={{ padding: '8px 16px', opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                      >
+                        Previous
+                      </button>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                        Page <strong style={{ color: 'var(--text-primary)' }}>{currentPage}</strong> of {totalPages}
+                      </span>
+                      <button 
+                        className="btn-primary" 
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        style={{ padding: '8px 16px', opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -398,7 +604,7 @@ export default function App() {
             salons={salons}
             onSelectSalon={(salon) => {
               setSelectedSalon(salon);
-              setActiveTab('browse');
+              handleSetTab('browse');
             }}
             favorites={favorites}
             toggleFavorite={toggleFavorite}
@@ -436,7 +642,7 @@ export default function App() {
 
         {/* VIEW 8: REFER & EARN HUB */}
         {activeTab === 'referrals' && (
-          <ReferralHub />
+          <ReferralHub currentUser={currentUser} />
         )}
 
       </main>
@@ -517,23 +723,23 @@ export default function App() {
         addToCart={addToCart}
         openCart={() => setIsCartOpen(true)}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onSelectSalon={(s) => { setSelectedSalon(s); setActiveTab('browse'); }}
+        setActiveTab={handleSetTab}
+        onSelectSalon={(s) => { setSelectedSalon(s); handleSetTab('browse'); }}
         salons={salons}
         bookings={bookings}
-        triggerFaceScan={() => { setActiveTab('scan'); setIsAuraOpen(false); }}
+        triggerFaceScan={() => { handleSetTab('scan'); setIsAuraOpen(false); }}
       />
 
       {/* Guided Hackathon Walkthrough Demo Panel */}
       <DemoPanel 
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleSetTab}
         setAuraOpen={setIsAuraOpen}
         dbSize={dbSize}
         setDbSize={setDbSize}
-        onTriggerFaceScan={() => setActiveTab('scan')}
-        onRunBudgetPreset={() => { setActiveTab('budget'); }}
-        onTriggerLocateSalon={() => { setActiveTab('map'); }}
+        onTriggerFaceScan={() => handleSetTab('scan')}
+        onRunBudgetPreset={() => { handleSetTab('budget'); }}
+        onTriggerLocateSalon={() => { handleSetTab('map'); }}
         onSimulateWalkinBooking={() => {
           const randomId = Math.random().toString(36).substring(2, 7).toUpperCase();
           const mockB = {
@@ -565,21 +771,21 @@ export default function App() {
       <div className="mobile-bottom-nav">
         <button 
           className={`mobile-nav-item ${activeTab === 'browse' ? 'active' : ''}`}
-          onClick={() => setActiveTab('browse')}
+          onClick={() => handleSetTab('browse')}
         >
           <Scissors size={20} />
           <span>Explore</span>
         </button>
         <button 
           className={`mobile-nav-item ${activeTab === 'bookings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('bookings')}
+          onClick={() => handleSetTab('bookings')}
         >
           <Calendar size={20} />
           <span>Dashboard</span>
         </button>
         <button 
           className={`mobile-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dashboard')}
+          onClick={() => handleSetTab('dashboard')}
         >
           <User size={20} />
           <span>Partner</span>

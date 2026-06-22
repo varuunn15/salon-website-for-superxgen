@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CreditCard, CheckCircle, Smartphone, Award, Download, ArrowRight, ShieldCheck, X, Sparkles, RefreshCw } from 'lucide-react';
 
 export default function CheckoutModal({ 
@@ -10,6 +10,18 @@ export default function CheckoutModal({
   const [step, setStep] = useState('payment'); // 'payment' | 'processing' | 'spin' | 'success'
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [ticketId, setTicketId] = useState('');
+  const cardRef = useRef(null);
+
+  useEffect(() => {
+    if (cardRef.current) {
+      setTimeout(() => {
+        cardRef.current.scrollTo({
+          top: cardRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+  }, [paymentMethod, step]);
 
   // Interactive Card Form States
   const [inputNumber, setInputNumber] = useState('');
@@ -80,15 +92,25 @@ export default function CheckoutModal({
     // Generate a unique ticket code
     const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
     setTicketId(`BKG-${rand}`);
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
   }, []);
 
   useEffect(() => {
     if (step !== 'payment' || paymentMethod !== 'upi') return;
     const timer = setInterval(() => {
-      setTimeLeft(prev => (prev > 0 ? prev - 1 : 180));
+      setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
   }, [step, paymentMethod]);
+
+  const handleRefreshTimer = () => {
+    setTimeLeft(180);
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -206,7 +228,7 @@ Please display the QR code at the salon.
 
   return (
     <div className="checkout-modal-overlay">
-      <div className="checkout-modal-card glass-panel-glow" style={{ overflow: 'hidden' }}>
+      <div className="checkout-modal-card glass-panel-glow" style={{ overflowY: 'auto', maxHeight: '90vh' }} ref={cardRef}>
         
         {step === 'payment' && (
           <button 
@@ -273,20 +295,30 @@ Please display the QR code at the salon.
                   </svg>
                 </div>
 
-                <div style={{ fontSize: '0.85rem', color: 'var(--primary-gold)', fontWeight: '600', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <span>Waiting for scan...</span>
-                  <span className="badge-cyan" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                <div style={{ fontSize: '0.85rem', color: timeLeft === 0 ? 'var(--danger-red)' : 'var(--primary-gold)', fontWeight: '600', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <span>{timeLeft === 0 ? 'QR Expired' : 'Waiting for scan...'}</span>
+                  <span className={timeLeft === 0 ? 'badge-danger' : 'badge-cyan'} style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
                     {formatTime(timeLeft)}
                   </span>
                 </div>
 
-                <button 
-                  className="btn-primary mt-4" 
-                  style={{ width: '85%', justifyContent: 'center', padding: '10px', fontSize: '0.85rem' }}
-                  onClick={handlePay}
-                >
-                  Simulate UPI Payment Success
-                </button>
+                {timeLeft === 0 ? (
+                  <button 
+                    className="btn-primary mt-4" 
+                    style={{ width: '85%', justifyContent: 'center', padding: '10px', fontSize: '0.85rem', display: 'flex', gap: '8px', alignItems: 'center', background: 'var(--primary-teal)', borderColor: 'var(--primary-teal)' }}
+                    onClick={handleRefreshTimer}
+                  >
+                    <RefreshCw size={14} /> Regenerate QR Code
+                  </button>
+                ) : (
+                  <button 
+                    className="btn-primary mt-4" 
+                    style={{ width: '85%', justifyContent: 'center', padding: '10px', fontSize: '0.85rem' }}
+                    onClick={handlePay}
+                  >
+                    Simulate UPI Payment Success
+                  </button>
+                )}
               </div>
             )}
 
