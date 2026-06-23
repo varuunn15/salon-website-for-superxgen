@@ -128,7 +128,7 @@ export default function LocationMap({
 
     // Add Salon Markers
     const citySalons = salons.filter(
-      (s) => s.city.toLowerCase() === currentCity.toLowerCase()
+      (s) => currentCity.toLowerCase() === 'all cities' || s.city.toLowerCase() === currentCity.toLowerCase()
     );
 
     citySalons.forEach((salon) => {
@@ -184,7 +184,7 @@ export default function LocationMap({
 
   // Filter and Sort Nearby Salons list
   const nearbySalonsList = salons
-    .filter((s) => s.city.toLowerCase() === currentCity.toLowerCase())
+    .filter((s) => currentCity.toLowerCase() === 'all cities' || s.city.toLowerCase() === currentCity.toLowerCase())
     .map((salon) => {
       const distance = userLocation
         ? calculateDistance(userLocation.lat, userLocation.lng, salon.coordinates.lat, salon.coordinates.lng)

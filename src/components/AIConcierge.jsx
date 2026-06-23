@@ -91,7 +91,7 @@ export default function AIConcierge({
     }
 
     // 4. Find all matching salons in the detected city
-    const citySalons = SALONS.filter(s => s.city.toLowerCase() === detectedCity.toLowerCase());
+    const citySalons = SALONS.filter(s => detectedCity.toLowerCase() === 'all cities' || s.city.toLowerCase() === detectedCity.toLowerCase());
     
     if (citySalons.length === 0) {
       return {

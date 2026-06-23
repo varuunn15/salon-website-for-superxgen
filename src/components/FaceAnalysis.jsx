@@ -208,7 +208,7 @@ export default function FaceAnalysis({
     const acne = acneGrades[Math.floor(Math.random() * acneGrades.length)];
 
     // Find custom beauty treatments from nearby salons to offer direct booking
-    const currentSalons = salons.filter(s => s.city.toLowerCase() === currentCity.toLowerCase());
+    const currentSalons = salons.filter(s => currentCity.toLowerCase() === 'all cities' || s.city.toLowerCase() === currentCity.toLowerCase());
     const matchedSalon = currentSalons[0] || { name: "Bodycraft Salon", services: [] };
     
     // Try to find a haircut and a facial in the salon

@@ -21,7 +21,7 @@ export default function BudgetOptimizer({
   const runOptimization = () => {
     // 1. Filter salons in current city
     const citySalons = salons.filter(
-      (s) => s.city.toLowerCase() === currentCity.toLowerCase()
+      (s) => currentCity.toLowerCase() === 'all cities' || s.city.toLowerCase() === currentCity.toLowerCase()
     );
 
     const packages = [];

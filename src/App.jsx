@@ -22,7 +22,7 @@ import './App.css';
 
 export default function App() {
   // Global App States
-  const [currentCity, setCurrentCity] = useState('Bangalore');
+  const [currentCity, setCurrentCity] = useState('All Cities');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('browse'); // 'browse' | 'bookings' | 'dashboard'
@@ -127,7 +127,7 @@ export default function App() {
   // 1. City-wise filtering & Advanced search engine logic
   const filteredSalons = salons.filter(salon => {
     // City match is mandatory
-    const matchesCity = salon.city.toLowerCase() === currentCity.toLowerCase();
+    const matchesCity = currentCity.toLowerCase() === 'all cities' || salon.city.toLowerCase() === currentCity.toLowerCase();
     if (!matchesCity) return false;
 
     // Search query matches salon name, description, address, or service names

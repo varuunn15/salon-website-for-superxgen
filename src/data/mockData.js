@@ -1,4 +1,5 @@
 export const CITIES = [
+  "All Cities",
   "Bangalore",
   "Mumbai",
   "Delhi",

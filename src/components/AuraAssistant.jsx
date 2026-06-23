@@ -267,7 +267,7 @@ Would you like me to book this at mirrors luxury salon?`
     }
 
     // Get salons matching current city
-    const citySalons = salons.filter(s => s.city.toLowerCase() === detectedCity.toLowerCase());
+    const citySalons = salons.filter(s => detectedCity.toLowerCase() === 'all cities' || s.city.toLowerCase() === detectedCity.toLowerCase());
     
     if (citySalons.length === 0) {
       return {
