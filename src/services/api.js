@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:5000/api'; // Point to the new Express backend
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const API_BASE_URL = isProduction 
+  ? 'https://backend-zeta-lac-78.vercel.app/api' 
+  : 'http://localhost:5000/api';
 
 /**
  * ============================================================

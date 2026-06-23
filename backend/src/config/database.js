@@ -10,7 +10,6 @@ export const connectDB = async () => {
     console.log('[Neon PostgreSQL] Database connected successfully.');
   } catch (error) {
     console.error('[Neon PostgreSQL] Connection failed:', error.message);
-    process.exit(1);
   }
 };
 
