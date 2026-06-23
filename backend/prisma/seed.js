@@ -4,6 +4,25 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+const CITY_COORDS = {
+  "Bangalore": { lat: 12.9716, lng: 77.5946 },
+  "Mumbai": { lat: 19.0760, lng: 72.8777 },
+  "Delhi": { lat: 28.6139, lng: 77.2090 },
+  "Hyderabad": { lat: 17.3850, lng: 78.4867 },
+  "Chennai": { lat: 13.0827, lng: 80.2707 },
+  "Pune": { lat: 18.5204, lng: 73.8567 }
+};
+
+function getCoordinates(city, index) {
+  const base = CITY_COORDS[city] || { lat: 12.9716, lng: 77.5946 };
+  const offsetLat = ((index * 17) % 100 - 50) * 0.0006;
+  const offsetLng = ((index * 23) % 100 - 50) * 0.0006;
+  return {
+    lat: Number((base.lat + offsetLat).toFixed(5)),
+    lng: Number((base.lng + offsetLng).toFixed(5))
+  };
+}
+
 async function main() {
   console.log('Start seeding database...');
 
@@ -56,6 +75,8 @@ async function main() {
     let createdSalon;
     
     if (!existingSalon) {
+      const index = SALONS.indexOf(salonData);
+      const coords = getCoordinates(salonCore.city, index >= 0 ? index : 1);
       createdSalon = await prisma.salon.create({
         data: {
           id: salonCore.id,
@@ -69,6 +90,7 @@ async function main() {
           address: salonCore.address,
           workingHours: salonCore.workingHours,
           imageTheme: salonCore.imageTheme,
+          coordinates: coords,
         }
       });
       console.log(`Created salon: ${createdSalon.name}`);
