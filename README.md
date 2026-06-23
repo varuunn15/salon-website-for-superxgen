@@ -148,15 +148,32 @@ salon-website-for-superxgen-main/
 
 ## 🌐 Environment & Deployment Setup
 
-### Vercel Deployment
-To deploy the application to Vercel instantly using the CLI:
-1. Log in to Vercel:
-   ```bash
-   npx vercel login
+### Frontend Deployment (GitHub Pages)
+The static frontend is deployed to GitHub Pages. You can build and deploy the latest changes by running:
+```bash
+npm run deploy
+```
+
+### Backend & Database Setup
+1. **Neon PostgreSQL**: The database schema is mapped using **Prisma ORM** and stored serverless on **Neon**.
+2. **Environment Variables**: Make sure to set the `DATABASE_URL` in `backend/.env`:
+   ```env
+   PORT=5000
+   DATABASE_URL="postgresql://neondb_owner:****@ep-bold-thunder-ateqqzln-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require"
+   JWT_SECRET="your_jwt_secret"
    ```
-2. Deploy directly:
+3. **Database Initialization**:
    ```bash
-   npx vercel --prod --yes
+   cd backend
+   npm install
+   npx prisma generate
+   npx prisma db push
+   npx prisma db seed
+   ```
+4. **Running Locally**:
+   To run both the frontend and backend servers concurrently, execute the following from the root directory:
+   ```bash
+   npm run dev
    ```
 
 ---
